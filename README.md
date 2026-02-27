@@ -1,1 +1,1 @@
-# Rebase-Token
+# Cross-Chain Rebase Token
