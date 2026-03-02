@@ -50,11 +50,11 @@ contract Vault {
         emit Redeem(msg.sender, _amount);
     }
 
-    /**
-     * @notice Gets the address of the RebaseToken contract associated with this vault.
-     * @return The address of the RebaseToken.
-     */
-    function getRebaseTokenAddress() external view returns (address) {
-        return address(i_rebaseToken);
-    }
+    // /**
+    //  * @notice Gets the address of the RebaseToken contract associated with this vault.
+    //  * @return The address of the RebaseToken.
+    //  */
+    // function getRebaseTokenAddress() external view returns (address) {
+    //     return address(i_rebaseToken);
+    // }
 }
