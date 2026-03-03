@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IRebaseToken} from "./interfaces/IRebaseToken.sol";
+import {IRebaseToken} from "./Interfaces/IRebaseToken.sol";
 
 contract Vault {
     IRebaseToken private immutable i_rebaseToken;
@@ -40,14 +40,19 @@ contract Vault {
      * @dev Follows Checks-Effects-Interactions pattern. Uses low-level .call for ETH transfer.
      */
     function redeem(uint256 _amount) external {
-        i_rebaseToken.burn(msg.sender, _amount);
+        uint256 amountToRedeem = _amount;
+        if (_amount == type(uint256).max) {
+            amountToRedeem = i_rebaseToken.balanceOf(msg.sender);
+        }
 
-        (bool success, ) = payable(msg.sender).call{value: _amount}("");
+        i_rebaseToken.burn(msg.sender, amountToRedeem);
+
+        (bool success, ) = payable(msg.sender).call{value: amountToRedeem}("");
         if (!success) {
             revert Vault_RedeemFailed();
         }
 
-        emit Redeem(msg.sender, _amount);
+        emit Redeem(msg.sender, amountToRedeem);
     }
 
     /**

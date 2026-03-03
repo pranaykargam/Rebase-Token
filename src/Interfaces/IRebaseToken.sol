@@ -16,6 +16,12 @@ interface IRebaseToken {
      * @param _amount The amount of tokens to burn.
      */
     function burn(address _from, uint256 _amount) external;
+
+    /**
+     * @notice Returns the balance of an account, including accrued interest if applicable.
+     * @param _user The address to query.
+     */
+    function balanceOf(address _user) external view returns (uint256);
 }
 
 
