@@ -1,0 +1,8 @@
+{
+  "name": "rebase-token",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@chainlink/contracts": "1.5.0"
+  }
+}
