@@ -53,11 +53,13 @@ contract RebaseTokenTest is Test {
         uint256 startBalance = rebaseToken.balanceOf(user);
         assertApproxEqAbs(startBalance, amount, 1);
 
-        vm.warp(block.timestamp + 1 hours);
+        // Use the cheatcode timestamp getter so `via_ir` optimizations don't treat `block.timestamp` as constant.
+        uint256 t0 = vm.getBlockTimestamp();
+        vm.warp(t0 + 1 hours);
         uint256 middleBalance = rebaseToken.balanceOf(user);
         assertGt(middleBalance, startBalance);
 
-        vm.warp(block.timestamp + 1 hours);
+        vm.warp(t0 + 2 hours);
         uint256 endBalance = rebaseToken.balanceOf(user);
         assertGt(endBalance, middleBalance);
         vm.stopPrank();

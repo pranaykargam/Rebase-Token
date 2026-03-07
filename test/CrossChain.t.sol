@@ -17,7 +17,8 @@ import {Client} from "@ccip/contracts/libraries/Client.sol";
 import {IRouterClient} from "@ccip/contracts/interfaces/IRouterClient.sol";
 
 // Chainlink Local simulator
-import {CCIPLocalSimulatorFork, Register} from "@chainlink-local/src/ccip/CCIPLocalSimulatorFork.sol";
+import {CCIPLocalSimulatorFork} from "@chainlink-local/src/ccip/CCIPLocalSimulatorFork.sol";
+import {Register} from "@chainlink-local/src/ccip/Register.sol";
 
 contract CrossChainTest is Test {
     uint256 sepoliaFork;
@@ -33,13 +34,15 @@ contract CrossChainTest is Test {
     RebaseTokenPool arbSepoliaPool;
 
     address owner;
+    address user;
 
     Register.NetworkDetails sepoliaNetworkDetails;
     Register.NetworkDetails arbSepoliaNetworkDetails;
 
     function setUp() public {
-        // 1. Create owner (fixed address; vm.makeAddr not available in current forge-std)
+        // 1. Create owner and user
         owner = address(0x1234);
+        user = vm.addr(1);
 
         // 2. Create forks
         sepoliaFork = vm.createSelectFork("sepolia");
@@ -198,7 +201,7 @@ contract CrossChainTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function bridgeTokens(
-        address user,
+        address fromUser,
         uint256 amountToBridge,
         uint256 localFork, // Source chain fork ID
         uint256 remoteFork, // Destination chain fork ID
@@ -219,7 +222,7 @@ contract CrossChainTest is Test {
 
         // 2. Construct the EVM2AnyMessage
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
-            receiver: abi.encode(user), // Receiver on the destination chain
+            receiver: abi.encode(fromUser), // Receiver on the destination chain
             data: "",                   // No additional data payload in this example
             tokenAmounts: tokenAmounts, // The tokens and amounts to transfer
             feeToken: localNetworkDetails.linkAddress, // Using LINK as the fee token
@@ -235,43 +238,88 @@ contract CrossChainTest is Test {
         );
 
         // 4. Fund the user with LINK (for testing via CCIPLocalSimulatorFork)
-        ccipLocalSimulatorFork.requestLinkFromFaucet(user, fee);
+        ccipLocalSimulatorFork.requestLinkFromFaucet(fromUser, fee);
 
         // 5. Approve LINK for the Router
-        vm.prank(user);
+        vm.prank(fromUser);
         IERC20(localNetworkDetails.linkAddress).approve(localNetworkDetails.routerAddress, fee);
 
         // 6. Approve the actual token to be bridged
-        vm.prank(user);
+        vm.prank(fromUser);
         IERC20(address(localToken)).approve(localNetworkDetails.routerAddress, amountToBridge);
 
         // 7. Get user's balance on the local chain BEFORE sending
-        uint256 localBalanceBefore = localToken.balanceOf(user);
+        uint256 localBalanceBefore = localToken.balanceOf(fromUser);
 
         // 8. Send the CCIP message
-        vm.prank(user);
+        vm.prank(fromUser);
         IRouterClient(localNetworkDetails.routerAddress).ccipSend(
             remoteNetworkDetails.chainSelector, // Destination chain ID
             message
         );
 
-        // 9. Get user's balance on the local chain AFTER sending and assert
-        uint256 localBalanceAfter = localToken.balanceOf(user);
-        assertEq(localBalanceAfter, localBalanceBefore - amountToBridge, "Local balance incorrect after send");
+        // 9. Assert user's balance on the local chain decreased by amountToBridge
+        assertEq(localToken.balanceOf(fromUser), localBalanceBefore - amountToBridge, "Local balance incorrect after send");
 
         // 10. Simulate message propagation to the remote chain
         vm.warp(block.timestamp + 20 minutes); // Fast-forward time
 
         // 11. Get user's balance on the remote chain BEFORE message processing
         vm.selectFork(remoteFork);
-        uint256 remoteBalanceBefore = remoteToken.balanceOf(user);
+        uint256 remoteBalanceBefore = remoteToken.balanceOf(fromUser);
 
         // 12. Process the message on the remote chain (using CCIPLocalSimulatorFork)
         ccipLocalSimulatorFork.switchChainAndRouteMessage(remoteFork);
 
-        // 13. Get user's balance on the remote chain AFTER message processing and assert
-        uint256 remoteBalanceAfter = remoteToken.balanceOf(user);
-        assertEq(remoteBalanceAfter, remoteBalanceBefore + amountToBridge, "Remote balance incorrect after receive");
+        // 13. Assert user's balance on the remote chain increased by amountToBridge
+        assertEq(remoteToken.balanceOf(fromUser), remoteBalanceBefore + amountToBridge, "Remote balance incorrect after receive");
 
+    }
+
+    function testBridgeAllTokens() public {
+        uint256 DEPOSIT_AMOUNT = 1e5; // Using a small, fixed amount for clarity
+
+        // 1. Deposit into Vault on Sepolia
+        vm.selectFork(sepoliaFork);
+        vm.deal(user, DEPOSIT_AMOUNT); // Give user some ETH to deposit
+
+        vm.prank(user);
+        Vault(payable(address(vault))).deposit{value: DEPOSIT_AMOUNT}();
+
+        assertEq(sepoliaToken.balanceOf(user), DEPOSIT_AMOUNT, "User Sepolia token balance after deposit incorrect");
+
+        // 2. Bridge Tokens: Sepolia -> Arbitrum Sepolia
+        bridgeTokens(
+            user,
+            DEPOSIT_AMOUNT,
+            sepoliaFork,
+            arbSepoliaFork,
+            sepoliaNetworkDetails,
+            arbSepoliaNetworkDetails,
+            sepoliaToken,
+            arbSepoliaToken
+        );
+
+        // 3. Bridge All Tokens Back: Arbitrum Sepolia -> Sepolia
+        vm.selectFork(arbSepoliaFork);
+        vm.warp(block.timestamp + 20 minutes); // Advance time on Arbitrum Sepolia before bridging back
+
+        uint256 arbBalanceToBridgeBack = arbSepoliaToken.balanceOf(user);
+        assertTrue(arbBalanceToBridgeBack > 0, "User Arbitrum balance should be non-zero before bridging back");
+
+        bridgeTokens(
+            user,
+            arbBalanceToBridgeBack,
+            arbSepoliaFork,
+            sepoliaFork,
+            arbSepoliaNetworkDetails,
+            sepoliaNetworkDetails,
+            arbSepoliaToken,
+            sepoliaToken
+        );
+
+        // Final state check: User on Sepolia should have their initial deposit back
+        vm.selectFork(sepoliaFork);
+        assertEq(sepoliaToken.balanceOf(user), DEPOSIT_AMOUNT, "User Sepolia token balance after bridging back incorrect");
     }
 }

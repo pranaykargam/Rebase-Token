@@ -36,6 +36,8 @@ interface IRebaseToken {
      * @param _user The address to query.
      */
     function getUserInterestRate(address _user) external view returns (uint256);
+
+      function grantMintAndBurnRole(address _account) external;
 }
 
 
