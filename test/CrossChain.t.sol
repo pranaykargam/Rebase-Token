@@ -258,7 +258,7 @@ contract CrossChainTest is Test {
             message
         );
 
-        // 9. Assert user's balance on the local chain decreased by amountToBridge
+          // 9. Assert user's balance on the local chain decreased by amountToBridge
         assertEq(localToken.balanceOf(fromUser), localBalanceBefore - amountToBridge, "Local balance incorrect after send");
 
         // 10. Simulate message propagation to the remote chain
