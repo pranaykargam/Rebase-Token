@@ -11,11 +11,10 @@ import {Pool} from "@ccip/contracts/libraries/Pool.sol";
 
 contract RebaseTokenPool is TokenPool {
 
-    // This pool fixes that by propagating each user's personal interest rate via CCIP messages.
-    // Without this code: Interest lost on every bridge 
-    // With this code: Interest preserved perfectly across chains
-
-That's why `userInterestRate` travels in the CCIP message! 🚀
+   // This pool fixes that by propagating each user's personal interest rate via CCIP messages.
+   // Without this code: Interest lost on every bridge 
+   // With this code: Interest preserved perfectly across chains
+   // That's why `userInterestRate` travels in the CCIP message! 🚀
 
     constructor(
         IERC20 _token,
