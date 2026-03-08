@@ -24,11 +24,14 @@ The balanceOf() function calculates real-time balances including accrued interes
 ## 2. Vault Contract
 
 Handles single-chain ETH deposits and withdrawals, minting/burning RebaseTokens accordingly.
-Deposit Flow:
+
+       Deposit Flow:
 
        User sends ETH to deposit()
        Vault calls token.mint(user, amount)
        User receives RebaseTokens with locked-in interest rate
+
+
        Withdrawal Flow:
 
        User calls redeem(amount)
