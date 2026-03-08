@@ -2,6 +2,8 @@
 
 The Rebase Token project is a cross-chain DeFi system that enables interest-bearing tokens with preserved rates across multiple blockchains. The architecture consists of four main components working together through Chainlink's CCIP protocol.
 
+ <img src = "./images/img2.png">
+
 ## 1. RebaseToken Contract
 
 The core token implements a rebase mechanism where each user has an individual interest rate locked in at deposit time.
