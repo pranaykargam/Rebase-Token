@@ -3,7 +3,6 @@ cd UniSwapV2
 forge init
 
 
-
 01.  SPDX license identifier and pragma
 
 02.  NatSpec contract-level comment (optional)
@@ -20,10 +19,18 @@ forge init
 
 08.  Errors (custom errors) and modifiers
 
+
+
 09.  Constructor
+// “starting setup” of a contract
+// A contract can have only one constructor.
+// It cannot return a value.
 
 10.  External/public functions (API surface) — ordered by importance and mutability: view/pure first, then non-view (readers often prefer view functions earlier)
 
 11.  Internal/private helper functions
 
 12.  Hooks, fallback and receive functions (if any)
+
+
+
