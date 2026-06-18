@@ -2,6 +2,12 @@ mkdir UniSwapV2
 cd UniSwapV2
 forge init
 
+01.State variables (immutable first)
+2. Modifiers
+3. Constructor
+4. Fallback/receive functions
+5. Public/external functions
+
 
 01.  SPDX license identifier and pragma
 
@@ -33,4 +39,6 @@ forge init
 12.  Hooks, fallback and receive functions (if any)
 
 
+## immutable + constructor (src/routerLiquidity)
+	Factory/WETH set once at deploy, stored in bytecode (not storage), can never change
 
